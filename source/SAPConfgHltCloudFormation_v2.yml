@@ -1,0 +1,472 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Template to install the SAP Config Health checks in your account and copy files from a public S3 bucket to a specified target bucket.
+
+Parameters:
+  ExistingS3BucketName:
+    Type: String
+    Description: 'Name of the existing S3 bucket where Lambda code is stored'
+    Default: 'sap-cnf-hlt-chk'
+
+
+Resources:
+  SAPConfgHltRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'SAPConfgHltFullAccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'ssm:SendCommand'
+                  - 'ssm:GetCommandInvocation'
+                  - 'ssm:ListCommands'
+                  - 's3:GetObject'
+                  - 'sCopyObject3:'
+                  - 's3:PutObject'
+                  - 's3:ListBucket'
+                  - 's3:GetBucketNotification'
+                  - 's3:PutBucketNotification'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:DeleteItem'
+                  - 'lambda:InvokeFunction'
+                  - 'athena:CreateTable'
+                  - 'athena:StartQueryExecution'
+                  - 'athena:GetQueryExecution'
+                  - 'athena:GetQueryResults'
+                  - 'ec2:Describe*'
+                  - 'ses:SendEmail'
+                  - 'ses:SendRawEmail'
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:DeleteItem'
+                Resource:
+                  - !GetAtt SAPConfgHltChkTable.Arn
+                  - !GetAtt SAPConfgHltChkTableMetaData.Arn
+        - PolicyName: 'SapRoboLensCloudWatchLogsPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                Resource: 'arn:aws:logs:*:*:*'
+
+  CopyFilesFunction:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: SAPConfgHltRole
+    Properties:
+      FunctionName: 'CopyFilesFunction1'
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          import json
+          import cfnresponse
+
+          def lambda_handler(event, context):
+            s3 = boto3.client('s3')
+            source_bucket = 'sap-robo-lens2'
+            target_bucket = os.environ['TARGET_BUCKET']
+            
+            try:
+              
+              # List all objects in the inventory folder
+              response = s3.list_objects_v2(Bucket=source_bucket, Prefix='inventory/')
+              if 'Contents' in response:
+                  for obj in response['Contents']:
+                      file_key = obj['Key']
+                      print(f'Copying file {file_key} from {source_bucket} to {target_bucket}')
+                      copy_source = {'Bucket': source_bucket, 'Key': file_key}
+                      target_key = f'inventory/{file_key.split("/", 1)[1]}'  # Ensure files are copied to inventory folder in target bucket
+                      s3.copy_object(CopySource=copy_source, Bucket=target_bucket, Key=target_key)
+              response = {"statusCode": 200, "body": "Files copied successfully."}
+              print('Files copied successfully.')
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, response)
+            except Exception as e:
+              response = dict(files_copied=0, error=str(e))
+              print(f'Error copying files: {str(e)}')
+              cfnresponse.send(event, context, cfnresponse.FAILED, response)
+            return 
+              
+
+      Runtime: 'python3.11'
+      Timeout: 300
+      Environment:
+        Variables:
+          TARGET_BUCKET: !Ref ExistingS3BucketName
+  InvokeCopyFilesFunction:
+    Type: 'Custom::InvokeCopyFilesFunction'
+    Properties:
+      ServiceToken: !GetAtt CopyFilesFunction.Arn
+
+  SAPConfgHltChkGenFunction:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkGen'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkGen.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SAPConfgHltChkGenFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:aws:s3:::${ExistingS3BucketName}'
+
+  SAPConfgHltChkS3NotificationLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+
+    Properties:
+      FunctionName: 'SAPConfgHltChkS3Notification'
+      Handler: index.lambda_handler
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        ZipFile: |
+          from __future__ import print_function
+          import json
+          import boto3
+          import cfnresponse
+
+          SUCCESS = "SUCCESS"
+          FAILED = "FAILED"
+
+          print('Loading function')
+          s3 = boto3.resource('s3')
+
+          def lambda_handler(event, context):
+              print("Received event: " + json.dumps(event, indent=2))
+              responseData={}
+              try:
+                  if event['RequestType'] == 'Delete':
+                      print("Request Type:",event['RequestType'])
+                      Bucket=event['ResourceProperties']['Bucket']
+                      delete_notification(Bucket)
+                      print("Sending response to custom resource after Delete")
+                  elif event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                      print("Request Type:",event['RequestType'])
+                      LambdaArn=event['ResourceProperties']['LambdaArn']
+                      Bucket=event['ResourceProperties']['Bucket']
+                      add_notification(LambdaArn, Bucket)
+                      responseData={'Bucket':Bucket}
+                      print("Sending response to custom resource")
+                  responseStatus = 'SUCCESS'
+              except Exception as e:
+                  print('Failed to process:', e)
+                  responseStatus = 'FAILED'
+                  responseData = {'Failure': 'Something bad happened.'}
+              cfnresponse.send(event, context, responseStatus, responseData, "CustomResourcePhysicalID")
+
+          def add_notification(LambdaArn, Bucket):
+              bucket_notification = s3.BucketNotification(Bucket)
+              response = bucket_notification.put(
+                NotificationConfiguration={
+                  'LambdaFunctionConfigurations': [
+                    {
+                        'LambdaFunctionArn': LambdaArn,
+                        'Events': [
+                            's3:ObjectCreated:*'
+                        ],
+                        'Filter': {
+                            'Key': {
+                                'FilterRules': [
+                                    {
+                                        'Name': 'prefix',
+                                        'Value': 'inventory/AWSSAPLensRoboInventory.csv'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                  ]
+                }
+              )
+              print("Put request completed....")
+
+          def delete_notification(Bucket):
+              bucket_notification = s3.BucketNotification(Bucket)
+              response = bucket_notification.put(
+                  NotificationConfiguration={}
+              )
+              print("Delete request completed....")
+      Runtime: python3.11
+      Timeout: 50
+
+  LambdaTrigger:
+    Type: 'Custom::LambdaTrigger'
+    DependsOn: LambdaInvokePermission
+    Properties:
+      ServiceToken: !GetAtt SAPConfgHltChkS3NotificationLambdaFunction.Arn
+      LambdaArn: !GetAtt SAPConfgHltChkGenFunction.Arn
+      Bucket: !Ref ExistingS3BucketName
+
+  SAPConfgHltChkExe:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkExe'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkExe.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+  SAPConfgHltChkMain:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkMain'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkMain.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+  SAPConfgHltChkTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: SAPConfgHltChk
+      AttributeDefinitions:
+        - AttributeName: instance_id
+          AttributeType: S
+        - AttributeName: compliance_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: instance_id
+          KeyType: HASH
+        - AttributeName: compliance_id
+          KeyType: RANGE
+      BillingMode: 'PAY_PER_REQUEST'
+
+  SAPConfgHltChkTableMetaData:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: SAPConfgHltChkMetaData
+      AttributeDefinitions:
+        - AttributeName: instance_id
+          AttributeType: S
+        - AttributeName: instance_no
+          AttributeType: S
+      KeySchema:
+        - AttributeName: instance_id
+          KeyType: HASH
+        - AttributeName: instance_no
+          KeyType: RANGE
+      BillingMode: 'PAY_PER_REQUEST'
+      
+  SAPHltLastChkAthenaTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: "default"  # Change this to your desired database name
+      TableInput:
+        Name: "sap_hlt_last_check_results"
+        Description: "Athena table for SAP HLT last check results"
+        Owner: "Athena"
+        Parameters:
+          classification: "csv"
+          skip.header.line.count: "1"
+          transient_lastDdlTime: "1698263127"
+        PartitionKeys: []
+        StorageDescriptor:
+          Columns:
+            - Name: "resource_category"
+              Type: "string"
+            - Name: "compliance_id"
+              Type: "string"
+            - Name: "expected_string"
+              Type: "string"
+            - Name: "pattern_string"
+              Type: "string"
+            - Name: "instance_id"
+              Type: "string"
+            - Name: "check_description"
+              Type: "string"
+            - Name: "resource_name"
+              Type: "string"
+            - Name: "created_time"
+              Type: "string"
+            - Name: "compliance_status"
+              Type: "string"
+            - Name: "recommendation"
+              Type: "string"
+            - Name: "sap_lens_bp"
+              Type: "string"
+            - Name: "sap_lens_bp_suggestion"
+              Type: "string"
+            - Name: "last_check_execution_time"
+              Type: "string"
+            - Name: "sap_lens_category"
+              Type: "string"
+            - Name: "sap_lens_topic"
+              Type: "string"
+            - Name: "complexity"
+              Type: "string"
+            - Name: "type_of_check"
+              Type: "string"
+            - Name: "sap_application"
+              Type: "string"
+            - Name: "set_by"
+              Type: "string"
+            - Name: "value_of_ins"
+              Type: "string"
+          Location: !Sub "s3://${ExistingS3BucketName}/last-check-results"
+          InputFormat: "org.apache.hadoop.mapred.TextInputFormat"
+          OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+          SerdeInfo:
+            SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+            Parameters:
+              separatorChar: ","
+              quoteChar: "\""
+              escapeChar: "\\"
+              serdeVersion: "1.0"
+
+  SAPHltMetaDataAthenaTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: "default"  # Change this to your desired database name
+      TableInput:
+        Name: "sap_hlt_check_meta_data"
+        Description: "Athena table for SAP HLT check metadata"
+        Owner: "Athena"
+        Parameters:
+          classification: "csv"
+          skip.header.line.count: "1"
+          transient_lastDdlTime: "1713150809"
+        PartitionKeys: []
+        StorageDescriptor:
+          Columns:
+            - Name: "instance_id"
+              Type: "string"
+            - Name: "ec2_subnet_id"
+              Type: "string"
+            - Name: "ec2_vpc_id"
+              Type: "string"
+            - Name: "sapinstanceno"
+              Type: "string"
+            - Name: "ec2_az"
+              Type: "string"
+            - Name: "ec2_account_id"
+              Type: "string"
+            - Name: "ec2_private_ip_address"
+              Type: "string"
+            - Name: "ec2_key_name"
+              Type: "string"
+            - Name: "sap_component"
+              Type: "string"
+            - Name: "ec2_instance_type"
+              Type: "string"
+            - Name: "responsible_team"
+              Type: "string"
+            - Name: "ec2_iam"
+              Type: "string"
+            - Name: "sap_application"
+              Type: "string"
+            - Name: "ec2_auto_recovery"
+              Type: "string"
+            - Name: "ec2_imdsv2"
+              Type: "string"
+            - Name: "ha_dr"
+              Type: "string"
+            - Name: "ec2_monitoring"
+              Type: "string"
+            - Name: "instance_no"
+              Type: "string"
+            - Name: "sid"
+              Type: "string"
+            - Name: "ec2_cores"
+              Type: "string"
+            - Name: "ec2_security_groups"
+              Type: "string"
+            - Name: "flag_val"
+              Type: "string"
+            - Name: "ec2_state"
+              Type: "string"
+            - Name: "ec2_os"
+              Type: "string"
+            - Name: "ec2_hypervisor"
+              Type: "string"
+            - Name: "type_of_system"
+              Type: "string"
+          Location: !Sub "s3://${ExistingS3BucketName}/metadata"
+          InputFormat: "org.apache.hadoop.mapred.TextInputFormat"
+          OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+          SerdeInfo:
+            SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+            Parameters:
+              separatorChar: ","
+              quoteChar: "\""
+              escapeChar: "\\"
+              serdeVersion: "1.0"
+              
+  SAPConfigHltSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: SAPConfigHltSchedule
+      Description: SAP Config Health Checks Scheduler
+      ScheduleExpression: "rate(1 day)"  # Adjust the schedule expression as needed
+      State: DISABLED
+      Targets:
+        - Id: "SAPConfgHltChkMain"
+          Arn: !GetAtt SAPConfgHltChkMain.Arn
+          Input: '{"sapinstanceID": ["instanceid1", "instanceid2"]}'  
