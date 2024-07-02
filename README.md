@@ -1,215 +1,283 @@
-# Guidance Title (required)
+`(For internal review: If you do not have running SAP application please reach out to @pariaws or @brrmaka)`
 
-The Guidance title should be consistent with the title established first in Alchemy.
+# SAP Infrastructure Health
 
-**Example:** *Guidance for Product Substitutions on AWS*
+## Table of Content
 
-This title correlates exactly to the Guidance it’s linked to, including its corresponding sample code repository. 
+1. [Overview](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L18)
+    - [Cost](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/tree/main#cost)
+2. [Prerequisites](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens#prerequisites)
+3. [Deployment Steps](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L51)
+4. [Deployment Validation](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L176)
+5. [Running the Guidance](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L175)
+6. [Next Steps](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L264)
+7. [Cleanup](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L268)
+8. [Notices](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L272)
+9. [Authors](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L276)
 
+## Overview
+SAP Infrastructure Health solution helps to achieve the best performance, resiliency, and costs, companies running SAP on AWS need to benchmark their environment against AWS for SAP best practices. These best practices are documented in SAP Lens of AWS Well-Architected Framework aligned to six pillars - operational excellence, security, reliability, performance efficiency, cost optimization, and sustainability. SAP health-check solutions on AWS provide insights on customers' SAP configuration against AWS best practices.
+<figure>
+<img src="img/sap-cnf-hlt-ref-arch.PNG" id="refArch"
+alt="Figure 1: Ref Architecture" />
 
-## Table of Content (required)
+<figcaption aria-hidden="true">Figure 1: Ref Architecture </figcaption>
+</figure>
 
-List the top-level sections of the README template, along with a hyperlink to the specific section.
-
-### Required
-
-1. [Overview](#overview-required)
-    - [Cost](#cost)
-2. [Prerequisites](#prerequisites-required)
-    - [Operating System](#operating-system-required)
-3. [Deployment Steps](#deployment-steps-required)
-4. [Deployment Validation](#deployment-validation-required)
-5. [Running the Guidance](#running-the-guidance-required)
-6. [Next Steps](#next-steps-required)
-7. [Cleanup](#cleanup-required)
-
-***Optional***
-
-8. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations-optional)
-9. [Revisions](#revisions-optional)
-10. [Notices](#notices-optional)
-11. [Authors](#authors-optional)
-
-## Overview (required)
-
-1. Provide a brief overview explaining the what, why, or how of your Guidance. You can answer any one of the following to help you write this:
-
-    - **Why did you build this Guidance?**
-    - **What problem does this Guidance solve?**
-
-2. Include the architecture diagram image, as well as the steps explaining the high-level overview and flow of the architecture. 
-    - To add a screenshot, create an ‘assets/images’ folder in your repository and upload your screenshot to it. Then, using the relative file path, add it to your README. 
-
-### Cost ( required )
-
-This section is for a high-level cost estimate. Think of a likely straightforward scenario with reasonable assumptions based on the problem the Guidance is trying to solve. Provide an in-depth cost breakdown table in this section below ( you should use AWS Pricing Calculator to generate cost breakdown ).
-
-Start this section with the following boilerplate text:
-
-_You are responsible for the cost of the AWS services used while running this Guidance. As of <month> <year>, the cost for running this Guidance with the default settings in the <Default AWS Region (Most likely will be US East (N. Virginia)) > is approximately $<n.nn> per month for processing ( <nnnnn> records )._
-
-Replace this amount with the approximate cost for running your Guidance in the default Region. This estimate should be per month and for processing/serving resonable number of requests/entities.
-
-Suggest you keep this boilerplate text:
-_We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance._
-
-### Sample Cost Table ( required )
-
-**Note : Once you have created a sample cost table using AWS Pricing Calculator, copy the cost breakdown to below table and upload a PDF of the cost estimation on BuilderSpace. Do not add the link to the pricing calculator in the ReadMe.**
-
+### Cost
 The following table provides a sample cost breakdown for deploying this Guidance with the default parameters in the US East (N. Virginia) Region for one month.
 
-| AWS service  | Dimensions | Cost [USD] |
-| ----------- | ------------ | ------------ |
-| Amazon API Gateway | 1,000,000 REST API calls per month  | $ 3.50month |
-| Amazon Cognito | 1,000 active users per month without advanced security feature | $ 0.00 |
 
-## Prerequisites (required)
+| AWS Service  | Dimensions | Cost (USD) |
+| ------------ | ---------- | ---------- |
+| Amazon DynamoDB | Table class (Standard), Average item size (all attributes) (10 KB), Data storage size (0.1 GB) | 0.16 |
+| Amazon Simple Storage Service (S3) | S3 Standard storage (1 GB per month), PUT, COPY, POST, LIST requests to S3 Standard (100), GET, SELECT, and all other requests from S3 Standard (100), Data returned by S3 Select (0.1 GB per month), Data scanned by S3 Select (1 GB per month) | 0.03 |
+| AWS Lambda      | Architecture (x86), Amount of ephemeral storage allocated (512 MB), Invoke Mode (Buffered), Number of requests (4 per month) | 0.00 |
+| Amazon Simple Email Service (SES) | Email messages sent from EC2 (4 per month) | 0.01 |
+| Amazon CloudWatch | Standard Logs: Data Ingested (0.2 GB) | 0.1 |
+| Amazon QuickSight | Per User | $24 - $50 |
 
-### Operating System (required)
 
-- Talk about the base Operating System (OS) and environment that can be used to run or deploy this Guidance, such as *Mac, Linux, or Windows*. Include all installable packages or modules required for the deployment. 
-- By default, assume Amazon Linux 2/Amazon Linux 2023 AMI as the base environment. All packages that are not available by default in AMI must be listed out.  Include the specific version number of the package or module.
+# Prerequisites
+## Operating System
+These deployment instructions work for SAP certified operating systems SUSE 12, SUSE 15, RHEL 7, RHEL 8 and RHEL 9. Please refer to [documentation](https://docs.aws.amazon.com/sap/latest/sap-hana/operating-system-configuration.html) for details.
 
-**Example:**
-“These deployment instructions are optimized to best work on **<Amazon Linux 2 AMI>**.  Deployment in another OS may require additional steps.”
+## AWS Account requirements 
 
-- Include install commands for packages, if applicable.
+This deployment requires SAP workloads running in Amazon EC2 instance. 
 
+- AWS Syststems Manager
 
-### Third-party tools (If applicable)
+# Deployment Steps
 
-*List any installable third-party tools required for deployment.*
+## Steps 1 - Pre-requisites and Scope of the solution
 
+AWS Account with SAP Application workloads.
+Please confirm the following services are available in the AWS account that you are planning to deploy this solution.
 
-### AWS account requirements (If applicable)
+### AWS Services               
 
-*List out pre-requisites required on the AWS account if applicable, this includes enabling AWS regions, requiring ACM certificate.*
+    Amazon S3                  
+    AWS Lambda                 
+    AWS Systems Manager        
+    Amazon DynamoDB           
+    AWS CloudFormation         
+    AWS CloudTrail             
+    Amazon CloudWatch          
+    Amazon SES                 
+    Amazon EventBridge         
+    Amazon Athena (Optional)     
+    Amazon Quick Sight (Optional)
+    Amazon Q (Optional)
+   
+### AWS Architecture Patterns
 
-**Example:** “This deployment requires you have public ACM certificate available in your AWS account”
+    Single-AZ
+    Multi-AZ
+    Multiple Accounts
 
-**Example resources:**
-- ACM certificate 
-- DNS record
-- S3 bucket
-- VPC
-- IAM role with specific permissions
-- Enabling a Region or service etc.
+### SAP Workload Scope
 
+    SAP NetWeaver Layer
+      ASCS 
+      ERS
+      PAS
+      AAS
+    Databases
+      SAP HANA
 
-### aws cdk bootstrap (if sample code has aws-cdk)
 
-<If using aws-cdk, include steps for account bootstrap for new cdk users.>
+## Step  2 - Launch the CloudFormation Stack
 
-**Example blurb:** “This Guidance uses aws-cdk. If you are using aws-cdk for first time, please perform the below bootstrapping....”
+Launch the AWS CloudFormation template included in this repository using one of the buttons from the table below. The CloudFormation template creates the following resources within your AWS account: AWS Lambda, IAM role, Amazon DynamoDB Tables.
 
-### Service limits  (if applicable)
+  |AWS Region                |     Link        |
+   |:------------------------:|:-----------:|
+   |us-east-1 (N. Virginia)    | [<img src="./img/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sap-conf-hlt-cheks&templateURL=https://sap-cnf-hlt-chk.s3.amazonaws.com/inventory/SAPConfgHltCloudFormation_v2.yml) 
 
-<Talk about any critical service limits that affect the regular functioning of the Guidance. If the Guidance requires service limit increase, include the service name, limit name and link to the service quotas page.>
+## Deployment Validation
 
-### Supported Regions (if applicable)
+Open CloudFormation console and verify the status of the template with the name starting with <Cfn-stackName>.
+If deployment is successful, you should see AWS Lambda functions SAPConfgHltChkMain, SAPConfgHltChkGen, SAPConfgHltChkExe, and SAPConfgHltChkS3Notification, CopyFilesFunction1, Amazon DynamoDB table SAPConfgHltChk and SAPConfgHltChkTableMetaData.
+Run the following CLI command to validate the deployment: aws cloudformation describe <Cfn-stackName>
 
-<If the Guidance is built for specific AWS Regions, or if the services used in the Guidance do not support all Regions, please specify the Region this Guidance is best suited for>
+## Running the Guidance
 
+## Step  1 - Fill Up The Inventory File 
 
-## Deployment Steps (required)
+Download inventory file `AWSSAPLensRoboInventory.csv` from your S3 bucket and fill with your SAP inventory information.
 
-Deployment steps must be numbered, comprehensive, and usable to customers at any level of AWS expertise. The steps must include the precise commands to run, and describe the action it performs.
 
-* All steps must be numbered.
-* If the step requires manual actions from the AWS console, include a screenshot if possible.
-* The steps must start with the following command to clone the repo. ```git clone xxxxxxx```
-* If applicable, provide instructions to create the Python virtual environment, and installing the packages using ```requirement.txt```.
-* If applicable, provide instructions to capture the deployed resource ARN or ID using the CLI command (recommended), or console action.
+<figure>
+<img src="img/sap-cnf-hlt-inv-file1.png" id="sapinventoryfile"
+alt="Figure 1: SAP Inventory File" />
+<figcaption aria-hidden="true">Figure 1: SAP Inventory File </figcaption>
+</figure>
 
- 
-**Example:**
 
-1. Clone the repo using command ```git clone xxxxxxxxxx```
-2. cd to the repo folder ```cd <repo-name>```
-3. Install packages in requirements using command ```pip install requirement.txt```
-4. Edit content of **file-name** and replace **s3-bucket** with the bucket name in your account.
-5. Run this command to deploy the stack ```cdk deploy``` 
-6. Capture the domain name created by running this CLI command ```aws apigateway ............```
+All fields are mandatory.
 
+**sno:** Unique Number. 
 
+**instance_id:** AWS Instance Id (i-xxxxxxxxx).
 
-## Deployment Validation  (required)
+**sap_application:**  What SAP application is this instance part of?
+Please use brief acronyms you identify them with, as it will be utilized on the Amazon QuickSight dashboard.
+Example - Solman, BWonHANA, S4HANA, ECC6-EHP8, CRM, EWM, GRC, GTS, BW7.4.
 
-<Provide steps to validate a successful deployment, such as terminal output, verifying that the resource is created, status of the CloudFormation template, etc.>
+**type_of_system:** What SAP landscape is this instance part of?
+Keep the wording brief and basic, as it will be utilized as display text on the dashboard.
+Example - Production, Development, Quality, Sandbox1, Sandbox2, Sandbox3.
 
+**sap_component:** What SAP component does the Amazon EC2 instance run?
+Please use the following naming convention based on which SAP component is executing within.
+Example - HANA_DB_Primary, HANA_DB_Standby, HANA_DB_DR, HANA_DB
 
-**Examples:**
+**sid:** System ID (SID) of SAP system. 
 
-* Open CloudFormation console and verify the status of the template with the name starting with xxxxxx.
-* If deployment is successful, you should see an active database instance with the name starting with <xxxxx> in        the RDS console.
-*  Run the following CLI command to validate the deployment: ```aws cloudformation describe xxxxxxxxxxxxx```
+**sap_instance_no:** SAP System instance number. 
 
+**sap_host_name:** Virtual hostname of the SAP component.
 
+**ha_dr:** Flag to indicate if the system has HA and DR.  
+Example: Possible combination of values.
 
-## Running the Guidance (required)
+|HA and DR option|		sap_component|
+|:----------------|:----------------|
+|No - HA or DR	  |		HANA_DB_Primary|
+|HA only	        |HANA_DB_Primary or HANA_DB_Standby|
+|DR only	        |HANA_DB_Primary or HANA_DB_DR|
+|HA and DR	      |HANA_DB_Primary or HANA_DB_Standby or HANA_DB_DR|
+			
 
-<Provide instructions to run the Guidance with the sample data or input provided, and interpret the output received.> 
+**responsible_team:**  The email address of the responsible team for notification.
 
-This section should include:
+**Note:** At this time it only accepts one email. Emails that are part of inventory file should be verified via Amazon Simple Email Service. Please refer to [Amazon SES Documentation.](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html)
 
-* Guidance inputs
-* Commands to run
-* Expected output (provide screenshot if possible)
-* Output description
+After you fill out the file  - `AWSSAPLensRoboInventory.csv` it looks like the following 
 
+<figure>
+<img src="img/sap-cnf-hlt-inv-file2.png" id="sapinventoryfile"
+alt="Figure 2: SAP Inventory File" />
+<figcaption aria-hidden="true">Figure 2: Example SAP Inventory File </figcaption>
+</figure>
 
+## Step 2 - Upload the inventory file to Amazon S3 bucket 
 
-## Next Steps (required)
+After populating the `AWSSAPLensRoboInventory.csv` with all SAP Inventory details upload the file into the folder s3 bucket under folder “inventory”.
 
-Provide suggestions and recommendations about how customers can modify the parameters and the components of the Guidance to further enhance it according to their requirements.
+<figure>
+<img src="img/sap-cnf-hlt-s3-inv.png" id="saps3inventoryfile"
+alt="Figure 3: SAP S3 Upload Inventory File" />
+<figcaption aria-hidden="true">Figure 3:  Upload SAP inventory file to Amazon S3://<buckname>/inventory</figcaption>
+</figure>
 
+After the file is uploaded, allow few minutes for each instance to populate the checks. 
 
-## Cleanup (required)
 
-- Include detailed instructions, commands, and console actions to delete the deployed Guidance.
-- If the Guidance requires manual deletion of resources, such as the content of an S3 bucket, please specify.
+### Step 3a - Periodic Execution of checks
 
+Please enable SAPConfigHltSchedule rule under Amazon EventBridge Rules or create your own schedule. 
 
+Enable and Edit/Configure the SAPConfigHltSchedule event rule for periodic execution of the chekcs.
 
-## FAQ, known issues, additional considerations, and limitations (optional)
 
+<figure>
+<img src="img/sap-cnf-hlt-event-shdul-rul.png" id="sap-cnf-hlt-email"
+alt="Figure 4: Event schedule " />
+<figcaption aria-hidden="true">Figure 4:  Edit the Event schedule rule at your convenience.    
+</figure>
 
-**Known issues (optional)**
 
-<If there are common known issues, or errors that can occur during the Guidance deployment, describe the issue and resolution steps here>
+In the invoke part of the schedule, choose the lambda function `SAPConfgHltChkMain` and construct json with the AWS instance ID for which you want to run the checks.
 
 
-**Additional considerations (if applicable)**
+<figure>
+<img src="img/sap-cnf-hlt-event_shdul.png" id="sap-cnf-hlt-email"
+alt="Figure 5: Event schedule " />
+<figcaption aria-hidden="true">Figure 5:  Event schedule  
+</figure>
 
-<Include considerations the customer must know while using the Guidance, such as anti-patterns, or billing considerations.>
 
-**Examples:**
+After the checks are completed successfully, the responsible team will get notified via email with high-priority drift information.
 
-- “This Guidance creates a public AWS bucket required for the use-case.”
-- “This Guidance created an Amazon SageMaker notebook that is billed per hour irrespective of usage.”
-- “This Guidance creates unauthenticated public API endpoints.”
 
+<figure>
+<img src="img/sap-cnf-hlt-email.png" id="sap-cnf-hlt-email"
+alt="Figure 4: drifit email " />
+<figcaption aria-hidden="true">Figure 4:  Drift email 
+</figure>
 
-Provide a link to the *GitHub issues page* for users to provide feedback.
 
+### Step 3b - OnDemand execution of checks
 
-**Example:** *“For any feedback, questions, or suggestions, please use the issues tab under this repo.”*
+Go to AWS Lambda → Locate Lambda function →  `SAPConfgHltChkMain`
 
-## Revisions (optional)
 
-Document all notable changes to this project.
+<figure>
+<img src="img/sap-cnf-hlt-main-lambda1.png" id="saps3inventoryfile"
+alt="Figure 4: Find main lambda function " />
+<figcaption aria-hidden="true">Figure 4:  SAPConfgHltChkMain AWS Lambda function
+</figure>
 
-Consider formatting this section based on Keep a Changelog, and adhering to Semantic Versioning.
 
-## Notices (optional)
+Click Configure test event → 
 
-Include a legal disclaimer
 
-**Example:**
-*Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
+<figure>
+<img src="img/sap-cnf-hlt-main-lambda2.png" id="saps3inventoryfile"
+alt="Figure 5: Config test event in AWS Lambda " />
+<figcaption aria-hidden="true">Figure 5:  Configure Test Event for SAPConfgHltChkMain AWS Lambda function
+</figure>
 
 
-## Authors (optional)
+**Event name:** SAPHealth_Check
+**Event Json:** Based on the inventory file - Enter the AWS instance for which you wish the checks to be executed.
 
-Name of code contributors
+```
+{
+"sapinstanceID": [
+"i-instanceid1",
+"i-instanceid2"
+]
+}
+```
+
+After the instance is added to the JSON string in the test event, click on the AWS Lambda Test button. After the checks are completed successfully, email notifications with high-priority drift information are sent.
+
+
+
+<figure>
+<img src="img/sap-cnf-hlt-email.png" id="sap-cnf-hlt-email"
+alt="Figure 6: drifit email " />
+<figcaption aria-hidden="true">Figure 6:  Drift email 
+</figure>
+
+### All the results of the checks are stored in the same Amazon S3 bucket.
+
+<figure>
+<img src="img/sap-cnf-hlt-result.png" id="sap-cnf-hlt-result"
+alt="Figure 7: drifit email " />
+<figcaption aria-hidden="true">Figure 7:  Checks Results 
+</figure>
+
+## Next Steps
+You can change the baseline configuration for compiance in column expected_string in Amazon DynamoDB table SAPConfgHltChk
+
+
+## Cleanup
+
+To Cleanup
+
+- Open the AWS CloudFormation console at https://console.aws.amazon.com/cloudformation.
+- On the Stacks page in the CloudFormation console, choose the stack name that you created in step 2. 
+- In the stack details pane, choose Delete.
+- Select Delete stack when prompted.For more deatils check - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-delete-stack.html
+- Finally, delete the contents of an S3 bucket created to implement the solution.
+
+## Notices
+Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided “as is” without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.
+
+
+## Authors
+Parishudh Marupurolu (pariaws@), Bharat Ramaka (brramaka@)
