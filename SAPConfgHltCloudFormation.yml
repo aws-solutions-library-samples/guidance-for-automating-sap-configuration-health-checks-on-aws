@@ -1,0 +1,360 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  CloudFormation template (SO9493) that deploys the necessary resources for the solution Automating SAP Configuration Health Checks on AWS
+
+Parameters:
+  ExistingS3BucketName:
+    Type: String
+    Description: 'Name of the existing S3 bucket where Lambda code is stored'
+    
+
+
+Resources:
+  SAPConfgHltRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'SAPConfgHltFullAccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'ssm:SendCommand'
+                  - 'ssm:GetCommandInvocation'
+                  - 'ssm:ListCommands'
+                  - 's3:GetObject'
+                  - 'sCopyObject3:'
+                  - 's3:PutObject'
+                  - 's3:ListBucket'
+                  - 's3:GetBucketNotification'
+                  - 's3:PutBucketNotification'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:DeleteItem'
+                  - 'lambda:InvokeFunction'
+                  - 'athena:CreateTable'
+                  - 'athena:StartQueryExecution'
+                  - 'athena:GetQueryExecution'
+                  - 'athena:GetQueryResults'
+                  - 'ec2:Describe*'
+                  - 'ses:SendEmail'
+                  - 'ses:SendRawEmail'
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:DeleteItem'
+                Resource:
+                  - !GetAtt SAPConfgHltChkTable.Arn
+                  - !GetAtt SAPConfgHltChkTableMetaData.Arn
+        - PolicyName: 'SapRoboLensCloudWatchLogsPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                  - 'logs:DescribeLogGroups'
+                Resource: 'arn:aws:logs:*:*:*'
+
+  
+  CopyFilesFunction:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: SAPConfgHltRole
+    Properties:
+      
+      FunctionName: CopySAPGitHubCodeS3
+      Handler: index.handler
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import urllib.request
+          import zipfile
+          import io
+          import boto3
+          import cfnresponse
+
+          print('CopySAPGitHubCodeS3 Loading function')
+
+          s3 = boto3.client('s3')
+          response_data={}
+
+          def download_repo_as_zip(git_repo, github_token):
+              repo_url = f"https://api.github.com/repos/{git_repo}/zipball"
+              headers = {'Authorization': f'token {github_token}'}
+              req = urllib.request.Request(repo_url, headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  if response.getcode() == 200:
+                      print("Successfully downloaded repository zip file")
+                      return io.BytesIO(response.read())
+                  else:
+                      response_data['Status'] = f"Failed to download repository: {response.getcode()} {response.read().decode()}"
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
+                      raise Exception(f"Failed to download repository: {response.getcode()} {response.read().decode()}")
+
+          def upload_files_to_s3(zip_content, bucket_name, source_dir, target_dir):
+              with zipfile.ZipFile(zip_content) as zip_file:
+                  for file_info in zip_file.infolist():
+                      if not file_info.is_dir():
+                          file_path = file_info.filename
+                          parts = file_path.split('/')
+                          if source_dir in parts:
+                              source_index = parts.index(source_dir)
+                              # Reconstruct the target path to maintain the directory structure under the source directory
+                              target_path = target_dir + '/'.join(parts[source_index + 1:])
+                              file_data = zip_file.read(file_path)
+                              print(f"Uploading {file_path} to s3://{bucket_name}/{target_path}")
+                              s3.put_object(
+                                  Bucket=bucket_name,
+                                  Key=target_path,
+                                  Body=file_data
+                              )
+
+          def handler(event, context):
+              print("Received event: " + json.dumps(event, indent=2))
+
+              s3_bucket = os.environ['TARGET_BUCKET']
+              git_repo = "aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws"
+              github_token = "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"
+              source_dir = 'source'
+              target_dir = 'inventory/'
+
+              try:
+                  zip_content = download_repo_as_zip(git_repo, github_token)
+                  upload_files_to_s3(zip_content, s3_bucket, source_dir, target_dir)
+                  response_data['Status'] = 'Files copied to S3 successfully.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+                  
+              except Exception as e:
+                  print(f"Error: {e}")
+                  response_data['Status'] = f"Error: {str(e)}"
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
+      Runtime: 'python3.11'
+      Timeout: 300
+      Environment:
+        Variables:
+          TARGET_BUCKET: !Ref ExistingS3BucketName
+  InvokeCopyFilesFunction:
+    Type: 'Custom::InvokeCopyFilesFunction'
+    Properties:
+      ServiceToken: !GetAtt CopyFilesFunction.Arn
+
+  SAPConfgHltChkGenFunction:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkGen'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkGen.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt SAPConfgHltChkGenFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:aws:s3:::${ExistingS3BucketName}'
+
+  SAPConfgHltChkS3NotificationLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+
+    Properties:
+      FunctionName: 'SAPConfgHltChkS3Notification'
+      Handler: index.lambda_handler
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        ZipFile: |
+          from __future__ import print_function
+          import json
+          import boto3
+          import cfnresponse
+
+          SUCCESS = "SUCCESS"
+          FAILED = "FAILED"
+
+          print('Loading function')
+          s3 = boto3.resource('s3')
+
+          def lambda_handler(event, context):
+              print("Received event: " + json.dumps(event, indent=2))
+              responseData={}
+              try:
+                  if event['RequestType'] == 'Delete':
+                      print("Request Type:",event['RequestType'])
+                      Bucket=event['ResourceProperties']['Bucket']
+                      delete_notification(Bucket)
+                      print("Sending response to custom resource after Delete")
+                  elif event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                      print("Request Type:",event['RequestType'])
+                      LambdaArn=event['ResourceProperties']['LambdaArn']
+                      Bucket=event['ResourceProperties']['Bucket']
+                      add_notification(LambdaArn, Bucket)
+                      responseData={'Bucket':Bucket}
+                      print("Sending response to custom resource")
+                  responseStatus = 'SUCCESS'
+              except Exception as e:
+                  print('Failed to process:', e)
+                  responseStatus = 'FAILED'
+                  responseData = {'Failure': 'Something bad happened.'}
+              cfnresponse.send(event, context, responseStatus, responseData, "CustomResourcePhysicalID")
+
+          def add_notification(LambdaArn, Bucket):
+              bucket_notification = s3.BucketNotification(Bucket)
+              response = bucket_notification.put(
+                NotificationConfiguration={
+                  'LambdaFunctionConfigurations': [
+                    {
+                        'LambdaFunctionArn': LambdaArn,
+                        'Events': [
+                            's3:ObjectCreated:*'
+                        ],
+                        'Filter': {
+                            'Key': {
+                                'FilterRules': [
+                                    {
+                                        'Name': 'prefix',
+                                        'Value': 'inventory/AWSSAPLensRoboInventory.csv'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                  ]
+                }
+              )
+              print("Put request completed....")
+
+          def delete_notification(Bucket):
+              bucket_notification = s3.BucketNotification(Bucket)
+              response = bucket_notification.put(
+                  NotificationConfiguration={}
+              )
+              print("Delete request completed....")
+      Runtime: python3.11
+      Timeout: 50
+
+  LambdaTrigger:
+    Type: 'Custom::LambdaTrigger'
+    DependsOn: LambdaInvokePermission
+    Properties:
+      ServiceToken: !GetAtt SAPConfgHltChkS3NotificationLambdaFunction.Arn
+      LambdaArn: !GetAtt SAPConfgHltChkGenFunction.Arn
+      Bucket: !Ref ExistingS3BucketName
+
+  SAPConfgHltChkExe:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkExe'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkExe.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+  SAPConfgHltChkMain:
+    Type: 'AWS::Lambda::Function'
+    DependsOn: InvokeCopyFilesFunction
+    Properties:
+      FunctionName: 'SAPConfgHltChkMain'
+      Handler: 'main.lambda_handler'
+      Role: !GetAtt SAPConfgHltRole.Arn
+      Code:
+        S3Bucket: !Ref ExistingS3BucketName
+        S3Key: 'inventory/SAPConfgHltChkMain.zip'
+      Runtime: 'python3.11'
+      MemorySize: 200
+      Timeout: 875  # 14 minutes and 35 seconds
+      Environment:
+        Variables:
+          s3bucket: !Ref ExistingS3BucketName
+          dydb_chk_tbl: !Ref SAPConfgHltChkTable
+          dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
+
+  SAPConfgHltChkTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: SAPConfgHltChk
+      AttributeDefinitions:
+        - AttributeName: instance_id
+          AttributeType: S
+        - AttributeName: compliance_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: instance_id
+          KeyType: HASH
+        - AttributeName: compliance_id
+          KeyType: RANGE
+      BillingMode: 'PAY_PER_REQUEST'
+
+  SAPConfgHltChkTableMetaData:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: SAPConfgHltChkMetaData
+      AttributeDefinitions:
+        - AttributeName: instance_id
+          AttributeType: S
+        - AttributeName: instance_no
+          AttributeType: S
+      KeySchema:
+        - AttributeName: instance_id
+          KeyType: HASH
+        - AttributeName: instance_no
+          KeyType: RANGE
+      BillingMode: 'PAY_PER_REQUEST'
+              
+  SAPConfigHltSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: SAPConfigHltSchedule
+      Description: SAP Config Health Checks Scheduler
+      ScheduleExpression: "rate(1 day)"  # Adjust the schedule expression as needed
+      State: DISABLED
+      Targets:
+        - Id: "SAPConfgHltChkMain"
+          Arn: !GetAtt SAPConfgHltChkMain.Arn
+          Input: '{"sapinstanceID": ["instanceid1", "instanceid2"]}'  
