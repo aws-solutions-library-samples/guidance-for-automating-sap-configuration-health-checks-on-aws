@@ -4,16 +4,16 @@
 
 ## Table of Content
 
-1. [Overview](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L18)
-    - [Cost](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/tree/main#cost)
-2. [Prerequisites](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens#prerequisites)
-3. [Deployment Steps](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L51)
-4. [Deployment Validation](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L176)
-5. [Running the Guidance](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L175)
-6. [Next Steps](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L264)
-7. [Cleanup](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L268)
-8. [Notices](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L272)
-9. [Authors](https://gitlab.aws.dev/sap-devops/custom-applications/sap_robo_lens/-/edit/main/README.md?ref_type=heads#L276)
+1. [Overview](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#overview)
+    - [Cost](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#cost)
+2. [Prerequisites](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#prerequisites)
+3. [Deployment Steps](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#deployment-steps)
+4. [Deployment Validation](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#deployment-validation)
+5. [Running the Guidance](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#running-the-guidance)
+6. [Next Steps](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#next-steps)
+7. [Cleanup](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#cleanup)
+8. [Notices](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#notices)
+9. [Authors](https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws#authors)
 
 ## Overview
 SAP Infrastructure Health solution helps to achieve the best performance, resiliency, and costs, companies running SAP on AWS need to benchmark their environment against AWS for SAP best practices. These best practices are documented in SAP Lens of AWS Well-Architected Framework aligned to six pillars - operational excellence, security, reliability, performance efficiency, cost optimization, and sustainability. SAP health-check solutions on AWS provide insights on customers' SAP configuration against AWS best practices.
@@ -93,7 +93,7 @@ Launch the AWS CloudFormation template included in this repository using one of 
 
   |AWS Region                |     Link        |
    |:------------------------:|:-----------:|
-   |us-east-1 (N. Virginia)    | [<img src="./img/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sap-conf-hlt-cheks&templateURL=https://sap-cnf-hlt-chk.s3.amazonaws.com/inventory/SAPConfgHltCloudFormation_v2.yml) 
+   |us-east-1 (N. Virginia)    | [<img src="./img/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sap-conf-hlt-cheks&templateURL=https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws/blob/main/SAPConfgHltCloudFormation.yml) 
 
 ## Deployment Validation
 
@@ -280,4 +280,4 @@ Customers are responsible for making their own independent assessment of the inf
 
 
 ## Authors
-Parishudh Marupurolu (pariaws@), Bharat Ramaka (brramaka@)
+Parishudh Marupurolu, Bharat Ramaka 
