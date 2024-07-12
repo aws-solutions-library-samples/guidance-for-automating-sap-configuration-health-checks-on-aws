@@ -138,7 +138,7 @@ Resources:
 
               s3_bucket = os.environ['TARGET_BUCKET']
               git_repo = "aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws"
-              github_token = "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"
+              github_token = "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"
               source_dir = 'source'
               target_dir = 'inventory/'
 
