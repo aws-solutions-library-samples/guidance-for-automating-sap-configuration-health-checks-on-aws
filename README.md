@@ -88,7 +88,7 @@ Create a new S3 bucket with the desired name.
 
 ## Step  2 - Launch the CloudFormation Stack
 
-Launch the AWS CloudFormation template included in this repository using one of the buttons from the table below. The CloudFormation template creates the following resources within your AWS account: AWS Lambda, IAM role, Amazon DynamoDB Tables.
+Launch the AWS CloudFormation template included in this repository. The CloudFormation template creates the following resources within your AWS account: AWS Lambda, IAM role, Amazon DynamoDB Tables.
 
 To deploy the solution guidance
 1.	Download the SAPConfgHltCloudFormation.yml to your local machine.
