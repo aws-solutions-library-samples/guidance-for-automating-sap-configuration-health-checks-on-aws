@@ -1,5 +1,3 @@
-`(For internal review: If you do not have running SAP application please reach out to @pariaws or @brrmaka)`
-
 # SAP Infrastructure Health
 
 ## Table of Content
@@ -54,6 +52,7 @@ This deployment requires SAP workloads running in Amazon EC2 instance.
 
 AWS Account with SAP Application workloads.
 Please confirm the following services are available in the AWS account that you are planning to deploy this solution.
+Create a new S3 bucket with the desired name.  
 
 ### AWS Services               
 
@@ -91,9 +90,15 @@ Please confirm the following services are available in the AWS account that you 
 
 Launch the AWS CloudFormation template included in this repository using one of the buttons from the table below. The CloudFormation template creates the following resources within your AWS account: AWS Lambda, IAM role, Amazon DynamoDB Tables.
 
-  |AWS Region                |     Link        |
-   |:------------------------:|:-----------:|
-   |us-east-1 (N. Virginia)    | [<img src="./img/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=sap-conf-hlt-cheks&templateURL=https://github.com/aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws/blob/main/SAPConfgHltCloudFormation.yml) 
+To deploy the solution guidance
+1.	Download the SAPConfgHltCloudFormation.yml to your local machine.
+2.	Open the CloudFormation >> Click Create stack >> With new resource ( standard )
+3.	Prerequisite >> Choose an existing template
+4.	Specify template >> Select Upload a template file
+5.	Choose file >> select local SAPConfgHltCloudFormation.yml >> Next 
+6.	Specify stack details >> Enter a stack name 
+7.	ExistingS3BucketName >> Prove bucket name that was create in Step 1 >> Next >> Submit 
+
 
 ## Deployment Validation
 
