@@ -1,4 +1,4 @@
-# SAP Infrastructure Health
+# Guidance for Automating SAP Configuration Health Checks on AWS
 
 ## Table of Content
 
@@ -51,8 +51,9 @@ This deployment requires SAP workloads running in Amazon EC2 instance.
 ## Steps 1 - Pre-requisites and Scope of the solution
 
 AWS Account with SAP Application workloads.
+Create a new S3 bucket with the desired name.
+
 Please confirm the following services are available in the AWS account that you are planning to deploy this solution.
-Create a new S3 bucket with the desired name.  
 
 ### AWS Services               
 
@@ -97,7 +98,7 @@ To deploy the solution guidance
 4.	Specify template >> Select Upload a template file
 5.	Choose file >> select local SAPConfgHltCloudFormation.yml >> Next 
 6.	Specify stack details >> Enter a stack name 
-7.	ExistingS3BucketName >> Prove bucket name that was create in Step 1 >> Next >> Submit 
+7.	Existing S3 BucketName >> Provide bucket name that was create in Step 1 >> Next >> Submit 
 
 
 ## Deployment Validation
@@ -285,4 +286,4 @@ Customers are responsible for making their own independent assessment of the inf
 
 
 ## Authors
-Parishudh Marupurolu, Bharat Ramaka 
+[Parishudh Marupurolu](https://www.linkedin.com/in/parishudh/), [Bharat Ramaka](https://www.linkedin.com/in/bramaka/)
