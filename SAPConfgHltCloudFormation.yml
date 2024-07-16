@@ -102,18 +102,15 @@ Resources:
           s3 = boto3.client('s3')
           response_data={}
 
-          def download_repo_as_zip(git_repo, github_token):
-              repo_url = f"https://api.github.com/repos/{git_repo}/zipball"
-              headers = {'Authorization': f'token {github_token}'}
-              req = urllib.request.Request(repo_url, headers=headers)
-              with urllib.request.urlopen(req) as response:
-                  if response.getcode() == 200:
-                      print("Successfully downloaded repository zip file")
-                      return io.BytesIO(response.read())
-                  else:
-                      response_data['Status'] = f"Failed to download repository: {response.getcode()} {response.read().decode()}"
-                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
-                      raise Exception(f"Failed to download repository: {response.getcode()} {response.read().decode()}")
+          def download_repo_as_zip(git_repo):
+            # Modified: Changed the URL to directly download the zip file from the public GitHub repository
+            repo_url = f"https://github.com/{git_repo}/archive/refs/heads/main.zip"
+            with urllib.request.urlopen(repo_url) as response:
+                if response.getcode() == 200:
+                    print("Successfully downloaded repository zip file")
+                    return io.BytesIO(response.read())
+                else:
+                    raise Exception(f"Failed to download repository: {response.getcode()} {response.read().decode()}")
 
           def upload_files_to_s3(zip_content, bucket_name, source_dir, target_dir):
               with zipfile.ZipFile(zip_content) as zip_file:
@@ -123,7 +120,6 @@ Resources:
                           parts = file_path.split('/')
                           if source_dir in parts:
                               source_index = parts.index(source_dir)
-                              # Reconstruct the target path to maintain the directory structure under the source directory
                               target_path = target_dir + '/'.join(parts[source_index + 1:])
                               file_data = zip_file.read(file_path)
                               print(f"Uploading {file_path} to s3://{bucket_name}/{target_path}")
@@ -138,12 +134,11 @@ Resources:
 
               s3_bucket = os.environ['TARGET_BUCKET']
               git_repo = "aws-solutions-library-samples/guidance-for-automating-sap-configuration-health-checks-on-aws"
-              github_token = "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"
               source_dir = 'source'
               target_dir = 'inventory/'
 
               try:
-                  zip_content = download_repo_as_zip(git_repo, github_token)
+                  zip_content = download_repo_as_zip(git_repo)
                   upload_files_to_s3(zip_content, s3_bucket, source_dir, target_dir)
                   response_data['Status'] = 'Files copied to S3 successfully.'
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
