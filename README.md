@@ -116,8 +116,8 @@ Download inventory file `AWSSAPLensRoboInventory.csv` from your S3 bucket and fi
 
 <figure>
 <img src="img/sap-cnf-hlt-inv-file1.png" id="sapinventoryfile"
-alt="Figure 1: SAP Inventory File" />
-<figcaption aria-hidden="true">Figure 1: SAP Inventory File </figcaption>
+alt="Figure 2: SAP Inventory File" />
+<figcaption aria-hidden="true">Figure 2: SAP Inventory File </figcaption>
 </figure>
 
 
@@ -166,8 +166,8 @@ After you fill out the file  - `AWSSAPLensRoboInventory.csv` it looks like the f
 
 <figure>
 <img src="img/sap-cnf-hlt-inv-file2.png" id="sapinventoryfile"
-alt="Figure 2: SAP Inventory File" />
-<figcaption aria-hidden="true">Figure 2: Example SAP Inventory File </figcaption>
+alt="Figure 3: SAP Inventory File" />
+<figcaption aria-hidden="true">Figure 3: Example SAP Inventory File </figcaption>
 </figure>
 
 ## Step 2 - Upload the inventory file to Amazon S3 bucket 
@@ -176,8 +176,8 @@ After populating the `AWSSAPLensRoboInventory.csv` with all SAP Inventory detail
 
 <figure>
 <img src="img/sap-cnf-hlt-s3-inv.png" id="saps3inventoryfile"
-alt="Figure 3: SAP S3 Upload Inventory File" />
-<figcaption aria-hidden="true">Figure 3:  Upload SAP inventory file to Amazon S3://<buckname>/inventory</figcaption>
+alt="Figure 4: SAP S3 Upload Inventory File" />
+<figcaption aria-hidden="true">Figure 4:  Upload SAP inventory file to Amazon S3://<buckname>/inventory</figcaption>
 </figure>
 
 After the file is uploaded, allow few minutes for each instance to populate the checks. 
@@ -192,8 +192,8 @@ Enable and Edit/Configure the SAPConfigHltSchedule event rule for periodic execu
 
 <figure>
 <img src="img/sap-cnf-hlt-event-shdul-rul.png" id="sap-cnf-hlt-email"
-alt="Figure 4: Event schedule " />
-<figcaption aria-hidden="true">Figure 4:  Edit the Event schedule rule at your convenience.    
+alt="Figure 5: Event schedule " />
+<figcaption aria-hidden="true">Figure 5:  Edit the Event schedule rule at your convenience.    
 </figure>
 
 
@@ -202,8 +202,8 @@ In the invoke part of the schedule, choose the lambda function `SAPConfgHltChkMa
 
 <figure>
 <img src="img/sap-cnf-hlt-event_shdul.png" id="sap-cnf-hlt-email"
-alt="Figure 5: Event schedule " />
-<figcaption aria-hidden="true">Figure 5:  Event schedule  
+alt="Figure 6: Event schedule " />
+<figcaption aria-hidden="true">Figure 6:  Event schedule  
 </figure>
 
 
@@ -212,8 +212,8 @@ After the checks are completed successfully, the responsible team will get notif
 
 <figure>
 <img src="img/sap-cnf-hlt-email.png" id="sap-cnf-hlt-email"
-alt="Figure 4: drifit email " />
-<figcaption aria-hidden="true">Figure 4:  Drift email 
+alt="Figure 7: Drift notification email" />
+<figcaption aria-hidden="true">Figure 7:  Drift email 
 </figure>
 
 
@@ -224,8 +224,8 @@ Go to AWS Lambda → Locate Lambda function →  `SAPConfgHltChkMain`
 
 <figure>
 <img src="img/sap-cnf-hlt-main-lambda1.png" id="saps3inventoryfile"
-alt="Figure 4: Find main lambda function " />
-<figcaption aria-hidden="true">Figure 4:  SAPConfgHltChkMain AWS Lambda function
+alt="Figure 8: Find main lambda function " />
+<figcaption aria-hidden="true">Figure 8:  SAPConfgHltChkMain AWS Lambda function
 </figure>
 
 
@@ -234,8 +234,8 @@ Click Configure test event →
 
 <figure>
 <img src="img/sap-cnf-hlt-main-lambda2.png" id="saps3inventoryfile"
-alt="Figure 5: Config test event in AWS Lambda " />
-<figcaption aria-hidden="true">Figure 5:  Configure Test Event for SAPConfgHltChkMain AWS Lambda function
+alt="Figure 9: Config test event in AWS Lambda " />
+<figcaption aria-hidden="true">Figure 9:  Configure Test Event for SAPConfgHltChkMain AWS Lambda function
 </figure>
 
 
@@ -257,16 +257,16 @@ After the instance is added to the JSON string in the test event, click on the A
 
 <figure>
 <img src="img/sap-cnf-hlt-email.png" id="sap-cnf-hlt-email"
-alt="Figure 6: drifit email " />
-<figcaption aria-hidden="true">Figure 6:  Drift email 
+alt="Figure 10: Drift notification email  " />
+<figcaption aria-hidden="true">Figure 10:  Drift notification email  
 </figure>
 
 ### All the results of the checks are stored in the same Amazon S3 bucket.
 
 <figure>
 <img src="img/sap-cnf-hlt-result.png" id="sap-cnf-hlt-result"
-alt="Figure 7: drifit email " />
-<figcaption aria-hidden="true">Figure 7:  Checks Results 
+alt="Figure 11: Checks Results " />
+<figcaption aria-hidden="true">Figure 11:  Checks Results 
 </figure>
 
 ## Next Steps
