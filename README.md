@@ -145,6 +145,9 @@ Example - HANA_DB_Primary, HANA_DB_Standby, HANA_DB_DR, HANA_DB
 
 **sap_host_name:** Virtual hostname of the SAP component.
 
+**Flag:** Define the value of the flag 'YES'. This is to assist customers in adding the system phase by phase while maintaining AWSSAPLensRoboInventory.csv as the single source of truth. 
+For instance, setting the flag to 'YES' generates or overrides checks, while setting it to 'NO' does not generate or overrides checks. 
+
 **ha_dr:** Flag to indicate if the system has HA and DR.  
 Example: Possible combination of values.
 
@@ -156,9 +159,8 @@ Example: Possible combination of values.
 |HA and DR	      |HANA_DB_Primary or HANA_DB_Standby or HANA_DB_DR|
 			
 
-**responsible_team:**  The email address of the responsible team for notification.
-
-**Note:** At this time it only accepts one email. Emails that are part of inventory file should be verified via Amazon Simple Email Service. Please refer to [Amazon SES Documentation.](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html)
+**responsible_team:**  The email address of the responsible team for notification. Email that is part of inventory file should be verified via ***Amazon Simple Email Service***. Please refer to [Amazon SES Documentation.](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html)
+**Note:** At this time it only accepts one email. 
 
 After you fill out the file  - `AWSSAPLensRoboInventory.csv` it looks like the following 
 
@@ -242,7 +244,7 @@ alt="Figure 5: Config test event in AWS Lambda " />
 
 ```
 {
-"sapinstanceID": [
+"aws-sap-instance-ids": [
 "i-instanceid1",
 "i-instanceid2"
 ]
