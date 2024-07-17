@@ -187,7 +187,7 @@ After the file is uploaded, allow few minutes for each instance to populate the 
 
 Please enable SAPConfigHltSchedule rule under Amazon EventBridge Rules or create your own schedule. 
 
-Enable and Edit/Configure the SAPConfigHltSchedule event rule for periodic execution of the chekcs.
+Enable and Edit/Configure the SAPConfigHltSchedule event rule for periodic execution of the checks.
 
 
 <figure>
@@ -213,7 +213,7 @@ After the checks are completed successfully, the responsible team will get notif
 <figure>
 <img src="img/sap-cnf-hlt-email.png" id="sap-cnf-hlt-email"
 alt="Figure 7: Drift notification email" />
-<figcaption aria-hidden="true">Figure 7:  Drift email 
+<figcaption aria-hidden="true">Figure 7:  Drift notification email 
 </figure>
 
 
@@ -270,7 +270,7 @@ alt="Figure 11: Checks Results " />
 </figure>
 
 ## Next Steps
-You can change the baseline configuration for compiance in column expected_string in Amazon DynamoDB table SAPConfgHltChk
+You can change the baseline configuration for compliance in column expected_string in Amazon DynamoDB table SAPConfgHltChk
 
 
 ## Cleanup
@@ -280,7 +280,7 @@ To Cleanup
 - Open the AWS CloudFormation console at https://console.aws.amazon.com/cloudformation.
 - On the Stacks page in the CloudFormation console, choose the stack name that you created in step 2. 
 - In the stack details pane, choose Delete.
-- Select Delete stack when prompted.For more deatils check - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-delete-stack.html
+- Select Delete stack when prompted. For more details check - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-delete-stack.html
 - Finally, delete the contents of an S3 bucket created to implement the solution.
 
 ## Notices
