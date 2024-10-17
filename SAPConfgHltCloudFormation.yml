@@ -1,13 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  CloudFormation template (SO9493) that deploys the necessary resources for the solution Automating SAP Configuration Health Checks on AWS
+  CloudFormation template (SO9493) for automating SAP Configuration Health Checks on AWS (SO9493). This template provisions the necessary AWS resources.
 
 Parameters:
   ExistingS3BucketName:
     Type: String
-    Description: 'Name of the existing S3 bucket where Lambda code is stored'
-    
-
+    Description: 'Enter the name of the S3 bucket created specifically for this solution.'
 
 Resources:
   SAPConfgHltRole:
@@ -31,7 +29,7 @@ Resources:
                   - 'ssm:GetCommandInvocation'
                   - 'ssm:ListCommands'
                   - 's3:GetObject'
-                  - 'sCopyObject3:'
+                  - 's3:CopyObject'
                   - 's3:PutObject'
                   - 's3:ListBucket'
                   - 's3:GetBucketNotification'
@@ -77,7 +75,6 @@ Resources:
                   - 'logs:PutLogEvents'
                   - 'logs:DescribeLogGroups'
                 Resource: 'arn:aws:logs:*:*:*'
-
   
   CopyFilesFunction:
     Type: 'AWS::Lambda::Function'
@@ -175,7 +172,6 @@ Resources:
           s3bucket: !Ref ExistingS3BucketName
           dydb_chk_tbl: !Ref SAPConfgHltChkTable
           dydb_chk_tbl_mdata: !Ref SAPConfgHltChkTableMetaData
-
 
   LambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'
@@ -346,10 +342,10 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: SAPConfigHltSchedule
-      Description: SAP Config Health Checks Scheduler
+      Description: Scheduler for SAP Configuration Health Checks.
       ScheduleExpression: "rate(1 day)"  # Adjust the schedule expression as needed
       State: DISABLED
       Targets:
         - Id: "SAPConfgHltChkMain"
           Arn: !GetAtt SAPConfgHltChkMain.Arn
-          Input: '{"sapinstanceID": ["instanceid1", "instanceid2"]}'  
+          Input: '{"aws-sap-instance-ids": ["instanceid1", "instanceid2"]}'  
