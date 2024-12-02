@@ -9,12 +9,12 @@ Parameters:
   HealthChecksS3BucketName:
     Type: String
     Description: "Name of the existing S3 bucket where Lambda code is stored"
-    Default: "<acountId>-sap-conf-hlt-chk"
+    Default: "<acountId>-mam308"
 
   QuickSightUsername:
     Type: String
     Description: "QuickSight Username"
-    Default: "WSOpsRole/Ops"
+    Default: ""
 
 Resources:
   AthenaResultsBucketName:
