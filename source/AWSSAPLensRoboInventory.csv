@@ -1,13 +1,4 @@
 sno,instance_id,sap_application,type_of_system,sap_component,sid,sap_instance_no,flag,ha_dr,responsible_team,cluster_resources
-1,InstanceId1,S4HANA,Production,HANA_DB_Primary,HDB,10,NO,No,saphealthchecks@amazon.com,"{""SAPHanaTopology"": ""SAPHanaTopology_HDB_10"", ""SAPHana"":"" "",""OverlayIP"":"" ""}"
-2,InstanceId2,BWonHANA,Production,HANA_DB_Primary,BPD,25,NO,No,saphealthchecks@amazon.com,
-3,InstanceId3,S4HANA,Production,APP1,S4P,0,NO,No,saphealthchecks@amazon.com,
-4,InstanceId4,S4HANA,Production,ASCS,S4P,20,NO,Yes,saphealthchecks@amazon.com,
-5,InstanceId5,S4HANA,Production,ERS,S4P,30,NO,Yes,saphealthchecks@amazon.com,
-7,InstanceId6,ECC,Quality,HANA_DB_Primary,HDB,0,NO,No,saphealthchecks@amazon.com,
-8,InstanceId7,S4HANA,Production,PAS,S4P,40,NO,No,saphealthchecks@amazon.com,
-9,InstanceId8,ERP,Production,HANA_DB_Primary,HDB,0,YES,No,saphealthchecks@amazon.com,
-10,InstanceId9,ERP,Production,PAS,PRI,9,YES,No,saphealthchecks@amazon.com,
-11,InstanceId10,HANASidecar,Production,HANA_DB_Primary,HDB,0,YES,No,saphealthchecks@amazon.com,
-12,InstanceId11,BWonHANA,Production,HANA_DB_Primary,H4P,9,YES,No,saphealthchecks@amazon.com,
-14,InstanceId12,BWonHANA,Production,PAS,S4P,7,YES,No,saphealthchecks@amazon.com,
+1,<Instance ID>,S4HANA,Production,HANA_DB,HPD,30,YES,No,<Your email>,
+2,<Instance ID>,S4HANA,Production,ASCS,S4P,10,YES,No,<Your email>,
+3,<Instance ID>,S4HANA,Production,PAS,S4P,40,YES,No,<Your email>,
